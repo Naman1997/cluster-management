@@ -1,0 +1,10 @@
+- name: Set timezone and configure NTP
+  hosts: "*"
+  become: yes
+  tasks:
+    - name: Set timezone
+      shell: timedatectl set-timezone Asia/Kolkata
+    - name: Set up NTP
+      shell: timedatectl set-ntp true
+    - name: Set hardware clock from system clock 
+      shell: hwclock --systohc

@@ -1,0 +1,8 @@
+- name: Upgrade VMs
+  hosts: "*"
+  become: yes
+  tasks:
+    - name: Run the equivalent of "pacman -Syu" as a separate step
+      community.general.pacman:
+        update_cache: yes
+        upgrade: yes
