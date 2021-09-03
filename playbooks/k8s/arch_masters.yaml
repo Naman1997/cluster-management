@@ -1,0 +1,128 @@
+---
+- hosts: masters
+  become: true
+  tasks:
+    - name: Install packages for master nodes
+      community.general.pacman:
+        name:
+          - git
+          - vim
+          - kubernetes-control-plane
+          - kubeadm
+          - kubelet
+          - containerd
+          - kubectl
+          - cni-plugins
+          - lxd
+          - docker
+          - base-devel
+        state: present
+        upgrade_extra_args: "noconfirm"
+
+- hosts: workers
+  become: true
+  tasks:
+    - name: Install packages for worker nodes
+      community.general.pacman:
+        name:
+          - git
+          - vim
+          - kubernetes-node
+          - kubeadm
+          - kubelet
+          - containerd
+          - kubectl
+          - cni-plugins
+          - lxd
+          - docker
+          - base-devel
+        state: present
+        upgrade_extra_args: "noconfirm"
+
+- hosts: all
+  become: true
+  tasks:
+    # - name: Install AUR helper yay from repo
+    #   shell: |
+    #     git clone https://aur.archlinux.org/yay-bin.git
+    #     cd yay-bin
+    #     makepkg -si
+    #     exit 0
+    - name: Add user user to docker group
+      user:
+        name: "{{ user }}"
+        group: docker
+    - name: Remove swapfile from /etc/fstab
+      mount:
+        name: "{{ item }}"
+        fstype: swap
+        state: absent
+      with_items:
+        - swap
+        - none
+    - name: Disable swap
+      command: swapoff -a
+      when: ansible_swaptotal_mb > 0
+    - name: Enable and start docker service
+      ansible.builtin.service:
+        name: docker
+        enabled: yes
+        state: started
+
+- hosts: all
+  become: false
+  tasks:
+    - name: Install etcd
+      community.general.pacman:
+        name: etcd
+        state: present
+        executable: yay
+        upgrade_extra_args: "noconfirm"
+
+- hosts: masters[0]
+  become: true
+  tasks:
+    # - name: Reset kubeadm
+    #   command: yes | sudo kubeadm reset
+    - name: Remove ~./kube
+      command: rm -rf $HOME/.kube
+    # - name: Remove /etc/cni/net.d
+    #   command: rm -rf /etc/cni/net.d
+    - name: Remove /var/lib/kubelet/config.yaml
+      command: rm -f /var/lib/kubelet/config.yaml
+    - name: Restart docker service
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+    - name: Stop kubelet service
+      ansible.builtin.service:
+        name: kubelet
+        enabled: yes
+        state: stopped
+    - name: Initialize the Kubernetes cluster using kubeadm
+      command: "{{ item }}"
+      with_items:
+      - kubeadm init phase kubelet-start
+      - kubeadm init --apiserver-advertise-address="{{ hostvars[inventory_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}" --apiserver-cert-extra-sans="{{ hostvars[inventory_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}"  --node-name "{{ inventory_hostname }}"
+    - name: Setup kubeconfig for user
+      command: "{{ item }}"
+      with_items:
+      - mkdir -p /home/"{{ user }}"/.kube
+      - cp -i /etc/kubernetes/admin.conf /home/"{{ user }}"/.kube/config
+      - chown "{{ user }}":"{{ user }}" /home/"{{ user }}"/.kube/config
+    - name: Install weave pod network
+      become: false
+      command: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+    # - name: Generate join command
+    #   command: kubeadm token create --print-join-command
+    #   register: join_command
+    # - name: Copy join command to local file
+    #   local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
+
+# - hosts: workers
+#   become: true
+#   tasks:
+#     - name: Copy the join command to server location
+#       copy: src=join-command dest=/tmp/join-command.sh mode=0777
+#     - name: Join the node to cluster
+#       command: sh /tmp/join-command.sh
