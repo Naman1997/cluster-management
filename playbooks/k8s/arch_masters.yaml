@@ -5,17 +5,8 @@
     - name: Install packages for master nodes
       community.general.pacman:
         name:
-          - git
-          - vim
           - kubernetes-control-plane
-          - kubeadm
-          - kubelet
-          - containerd
           - kubectl
-          - cni-plugins
-          - lxd
-          - docker
-          - base-devel
         state: present
         upgrade_extra_args: "noconfirm"
 
@@ -25,29 +16,23 @@
     - name: Install packages for worker nodes
       community.general.pacman:
         name:
-          - git
-          - vim
           - kubernetes-node
-          - kubeadm
-          - kubelet
-          - containerd
-          - kubectl
-          - cni-plugins
-          - lxd
-          - docker
-          - base-devel
         state: present
         upgrade_extra_args: "noconfirm"
 
 - hosts: all
   become: true
   tasks:
-    # - name: Install AUR helper yay from repo
-    #   shell: |
-    #     git clone https://aur.archlinux.org/yay-bin.git
-    #     cd yay-bin
-    #     makepkg -si
-    #     exit 0
+    - name: Install packages for all nodes
+      community.general.pacman:
+        name:
+          - kubeadm
+          - kubelet
+          - cni-plugins
+          - docker
+          - base-devel
+        state: present
+        upgrade_extra_args: "noconfirm"
     - name: Add user user to docker group
       user:
         name: "{{ user }}"
@@ -68,6 +53,21 @@
         name: docker
         enabled: yes
         state: started
+    - name: Download specific release for CNI binary
+      command: "{{ item }}"
+      with_items:
+        - wget https://github.com/containernetworking/plugins/releases/download/v0.9.1/cni-plugins-linux-amd64-v0.9.1.tgz
+        - tar -xzvf cni-plugins-linux-amd64-v0.9.1.tgz --directory /opt/cni/bin/
+    - name: Copy contents
+      copy:
+        src: /opt/cni/bin/
+        dest: /usr/lib/cni/
+        remote_src: True
+        owner: root
+        group: root
+        mode: 0755
+    - name: Fix '/usr/lib/cni/' permissions
+      shell: "chmod a+x /usr/lib/cni/*"
 
 - hosts: all
   become: false
@@ -82,12 +82,8 @@
 - hosts: masters[0]
   become: true
   tasks:
-    # - name: Reset kubeadm
-    #   command: yes | sudo kubeadm reset
     - name: Remove ~./kube
       command: rm -rf $HOME/.kube
-    # - name: Remove /etc/cni/net.d
-    #   command: rm -rf /etc/cni/net.d
     - name: Remove /var/lib/kubelet/config.yaml
       command: rm -f /var/lib/kubelet/config.yaml
     - name: Restart docker service
@@ -102,27 +98,38 @@
     - name: Initialize the Kubernetes cluster using kubeadm
       command: "{{ item }}"
       with_items:
-      - kubeadm init phase kubelet-start
-      - kubeadm init --apiserver-advertise-address="{{ hostvars[inventory_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}" --apiserver-cert-extra-sans="{{ hostvars[inventory_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}"  --node-name "{{ inventory_hostname }}"
+        - kubeadm init phase kubelet-start
+        - kubeadm init --apiserver-advertise-address="{{ hostvars[inventory_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}" --apiserver-cert-extra-sans="{{ hostvars[inventory_hostname]['ansible_facts']['eth0']['ipv4']['address'] }}"  --node-name "{{ inventory_hostname }}" --pod-network-cidr={{ cidr }} --upload-certs
     - name: Setup kubeconfig for user
       command: "{{ item }}"
       with_items:
-      - mkdir -p /home/"{{ user }}"/.kube
-      - cp -i /etc/kubernetes/admin.conf /home/"{{ user }}"/.kube/config
-      - chown "{{ user }}":"{{ user }}" /home/"{{ user }}"/.kube/config
-    - name: Install weave pod network
+        - mkdir -p /home/"{{ user }}"/.kube
+        - cp -i /etc/kubernetes/admin.conf /home/"{{ user }}"/.kube/config
+        - chown "{{ user }}":"{{ user }}" /home/"{{ user }}"/.kube/config
+    - name: Install flannel
       become: false
-      command: kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
-    # - name: Generate join command
-    #   command: kubeadm token create --print-join-command
-    #   register: join_command
-    # - name: Copy join command to local file
-    #   local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+    - name: Get join command
+      command: kubeadm token create --print-join-command
+      register: join_command
+    - name: Copy join command to local file
+      become: false
+      local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
 
-# - hosts: workers
-#   become: true
-#   tasks:
-#     - name: Copy the join command to server location
-#       copy: src=join-command dest=/tmp/join-command.sh mode=0777
-#     - name: Join the node to cluster
-#       command: sh /tmp/join-command.sh
+- hosts: workers:masters:!masters[0]
+  become: true
+  tasks:
+    - name: Copy the join command to server location
+      copy: src=join-command dest=/tmp/join-command.sh mode=0777
+    - name: Join the node to cluster
+      command: sh /tmp/join-command.sh
+
+- hosts: masters[0]
+  become: false
+  tasks:
+    - name: Mark worker nodes in kubernetes
+      command: kubectl label nodes "{{ item }}" kubernetes.io/role=worker
+      with_items: "{{ groups['workers'] }}"
+    - name: Mark master nodes in kubernetes
+      command: "kubectl label nodes {{ item }} kubernetes.io/role=master"
+      with_items: "{{ groups['masters:!masters[0]'] }}"
