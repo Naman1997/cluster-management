@@ -132,4 +132,4 @@
       with_items: "{{ groups['workers'] }}"
     - name: Mark master nodes in kubernetes
       command: "kubectl label nodes {{ item }} kubernetes.io/role=master"
-      with_items: "{{ groups['masters:!masters[0]'] }}"
+      with_items: "{{ groups['masters'][1:] }}"
