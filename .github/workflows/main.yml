@@ -12,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      # Runs a set of commands using the runners shell
       - name: Install ansible
         run: |
           sudo apt install software-properties-common
