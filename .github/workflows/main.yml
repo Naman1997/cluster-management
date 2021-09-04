@@ -28,9 +28,9 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Install ansible
         run: |
-          apt install software-properties-common
-          add-apt-repository --yes --update ppa:ansible/ansible
-          apt install ansible
+          sudo apt install software-properties-common
+          sudo add-apt-repository --yes --update ppa:ansible/ansible
+          sudo apt install ansible
       
       # Check syntax for all ansible playbooks
       - name: Run a one-line script
