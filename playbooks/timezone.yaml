@@ -1,5 +1,5 @@
 - name: Set timezone and configure NTP
-  hosts: "*"
+  hosts: all
   become: yes
   tasks:
     - name: Set timezone

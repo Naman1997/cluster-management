@@ -1,0 +1,5 @@
+{
+    "timezone": "Asia/Kolkata",
+    "user": "example_user",
+    "cidr": "10.244.0.0/16"
+}

@@ -1,5 +1,5 @@
 - name: Upgrade VMs
-  hosts: "*"
+  hosts: all
   become: yes
   tasks:
     - name: Run the equivalent of "pacman -Syu" as a separate step
