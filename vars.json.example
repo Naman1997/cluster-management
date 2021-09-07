@@ -1,5 +1,6 @@
 {
     "timezone": "Asia/Kolkata",
     "user": "example_user",
-    "cidr": "10.244.0.0/16"
+    "cidr": "10.244.0.0/16",
+    "metallb-range": "192.168.0.1/24"
 }

@@ -20,7 +20,7 @@
         state: present
         upgrade_extra_args: "noconfirm"
 
-- hosts: all
+- hosts: all:!nfs
   become: true
   tasks:
     - name: Install packages for all nodes
@@ -69,7 +69,7 @@
     - name: Fix '/usr/lib/cni/' permissions
       shell: "chmod a+x /usr/lib/cni/*"
 
-- hosts: all
+- hosts: all:!nfs
   become: false
   tasks:
     - name: Install etcd

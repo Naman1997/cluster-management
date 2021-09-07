@@ -1,0 +1,28 @@
+- hosts: masters[0]
+  become: false
+  tasks:
+    - name: Install helm on master node
+      become: true
+      community.general.pacman:
+        name:
+          - helm
+        state: present
+        upgrade_extra_args: "noconfirm"
+    - name: Add MetalLB repo
+      kubernetes.core.helm_repository:
+        name: metallb
+        repo_url: "https://metallb.github.io/metallb"
+    - name: Install MetalLB with Helm
+      kubernetes.core.helm:
+        update_repo_cache: yes
+        release_name: metallb
+        chart_ref: metallb/metallb
+        create_namespace: yes
+        release_namespace: metallb-system
+        release_values:
+          configInline:
+            address-pools:
+              - name: default
+                protocol: layer2
+                addresses:
+                  - "{{ metallbRange }}"
