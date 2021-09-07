@@ -23,14 +23,14 @@
     - name: Create export folder
       command: mkdir /srv/nfs/kubedata -p
     - name: Set permissions to nobody
-      shell: 'chown nobody: /srv/nfs/kubedata'
+      shell: "chown nobody: /srv/nfs/kubedata"
     - name: Ensure required entries are made to hosts file.
       lineinfile:
         path: /etc/exports
         state: present
         line: "{{ item }}"
       with_items:
-        - '/srv/nfs/kubedata  *(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)'
+        - "/srv/nfs/kubedata  *(rw,sync,no_subtree_check,no_root_squash,no_all_squash,insecure)"
     - name: Enable and start rpc-gssd service
       ansible.builtin.service:
         name: rpc-gssd

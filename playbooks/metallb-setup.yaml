@@ -22,7 +22,7 @@
         release_values:
           configInline:
             address-pools:
-            - name: default
-              protocol: layer2
-              addresses:
-              - "{{ metallbRange }}"
+              - name: default
+                protocol: layer2
+                addresses:
+                  - "{{ metallbRange }}"
