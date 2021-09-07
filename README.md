@@ -5,7 +5,7 @@ Ansible playbooks for [Arch Linux](https://archlinux.org/) VM management and set
 
 ## Install the requirements
 ```
-ansible-galaxy collection install -r requirements.yml
+ansible-galaxy collection install -r requirements.yaml
 ```
 
 ## Prerequisites for running playbook k8s-setup
@@ -13,6 +13,12 @@ ansible-galaxy collection install -r requirements.yml
 - iptables will conflict with iptables-nft. Make sure all VMs have iptables-nft installed
 - Make sure you have yay installed in your VMs
 - Create vars.json by running: `cp vars.json.example vars.json` and update `vars.json` file
+
+## Prerequisites for running playbook nfs-setup
+- Make sure you're able to SSH into all your VMs
+- You have exactly one VM inside the nfs group in your inventory
+- Name of your NFS VM is 'nfs-server' in your inventory
+- You have already executed the 'k8s-setup' playbook[This is need for helm changes in the playbook]
 
 ## Run different playbooks
 ```

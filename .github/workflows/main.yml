@@ -1,4 +1,4 @@
-name: Ansible Validation
+name: Ansible
 on:
   push:
     branches: [ main ]
