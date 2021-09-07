@@ -20,6 +20,10 @@ ansible-galaxy collection install -r requirements.yaml
 - Name of your NFS VM is 'nfs-server' in your inventory
 - You have already executed the 'k8s-setup' playbook[This is need for helm changes in the playbook]
 
+## Prerequisites for running playbook metallb-setup
+- Make sure you're able to SSH into all your VMs
+- You have already executed the 'k8s-setup' playbook[This is need for helm changes in the playbook]
+
 ## Run different playbooks
 ```
 ansible-playbook playbooks/<<Playbook Name>> -i path/to/hosts -e "@path/to/vars.json" -vv --user <<Username>> --ask-become-pass
