@@ -133,3 +133,10 @@
     - name: Mark master nodes in kubernetes
       command: "kubectl label nodes {{ item }} kubernetes.io/role=master"
       with_items: "{{ groups['masters'][1:] }}"
+    - name: Wait for nodes to be ready
+      shell: "kubectl get nodes"
+      register: nodes
+      until:      
+        - '" Ready "  in nodes.stdout'      
+      retries: 5
+      delay: 10
