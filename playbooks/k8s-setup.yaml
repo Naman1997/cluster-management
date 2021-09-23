@@ -10,7 +10,7 @@
         state: present
         upgrade_extra_args: "noconfirm"
       register: result_master
-      until: result_master.rc == 0
+      until: result_master.failed == false
       retries: 5
       delay: 10
 
@@ -24,7 +24,7 @@
         state: present
         upgrade_extra_args: "noconfirm"
       register: result_worker
-      until: result_worker.rc == 0
+      until: result_worker.failed == false
       retries: 5
       delay: 10
 
