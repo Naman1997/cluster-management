@@ -9,6 +9,10 @@
           - kubectl
         state: present
         upgrade_extra_args: "noconfirm"
+      register: result_master
+      until: result_master.rc == 0
+      retries: 5
+      delay: 10
 
 - hosts: workers
   become: true
@@ -19,11 +23,15 @@
           - kubernetes-node
         state: present
         upgrade_extra_args: "noconfirm"
+      register: result_worker
+      until: result_worker.rc == 0
+      retries: 5
+      delay: 10
 
 - hosts: all:!nfs
   become: true
   tasks:
-    - name: Install packages for all nodes
+    - name: Install packages for all nodes except nfs
       community.general.pacman:
         name:
           - kubeadm
@@ -72,7 +80,7 @@
 - hosts: all:!nfs
   become: false
   tasks:
-    - name: Install etcd
+    - name: Install etcd for all nodes except nfs
       community.general.pacman:
         name: etcd
         state: present
