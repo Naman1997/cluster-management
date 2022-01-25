@@ -1,4 +1,10 @@
 ---
+- hosts: all
+  become: true
+  tasks:
+    - name: Delete the pacman db lock file
+      shell: "sudo rm -f /var/lib/pacman/db.lck"
+
 - hosts: masters
   become: true
   tasks:
