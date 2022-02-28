@@ -3,7 +3,7 @@
   become: true
   tasks:
     - name: Delete the pacman db lock file
-      shell: "sudo rm -f /var/lib/pacman/db.lck"
+      shell: "rm -f /var/lib/pacman/db.lck"
 
 - hosts: masters
   become: true
@@ -43,14 +43,10 @@
           - kubeadm
           - kubelet
           - cni-plugins
-          - docker
+          - containerd
           - base-devel
         state: present
         upgrade_extra_args: "noconfirm"
-    - name: Add user user to docker group
-      user:
-        name: "{{ user }}"
-        group: docker
     - name: Remove swapfile from /etc/fstab
       mount:
         name: "{{ item }}"
@@ -62,11 +58,10 @@
     - name: Disable swap
       command: swapoff -a
       when: ansible_swaptotal_mb > 0
-    - name: Enable and start docker service
+    - name: Enable containerd service
       ansible.builtin.service:
-        name: docker
+        name: containerd
         enabled: yes
-        state: started
     - name: Download specific release for CNI binary
       command: "{{ item }}"
       with_items:
@@ -93,6 +88,41 @@
         executable: yay
         upgrade_extra_args: "noconfirm"
 
+- hosts: masters:workers:!nfs
+  become: true
+  tasks:
+    - name: Update containerd conf
+      shell:
+        cmd: |
+          cat <<EOF | tee /etc/modules-load.d/containerd.conf
+          overlay
+          br_netfilter
+          EOF
+    - name: Run modprobe for overlay
+      command: modprobe overlay
+    - name: Run modprobe for br_netfilter
+      command: modprobe br_netfilter
+    - name: Setup required sysctl params, these persist across reboots
+      shell:
+        cmd: |
+          cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          EOF
+    - name: Apply sysctl params without reboot
+      command: sysctl --system
+    - name: Enable kubelet
+      command: systemctl enable kubelet.service
+    - name: Create a containerd configuration file
+      command: mkdir -p /etc/containerd && containerd config default | tee /etc/containerd/config.toml
+    - name: Restart containerd service
+      ansible.builtin.service:
+        name: containerd
+        state: restarted
+    - name: Enable kubelet
+      command: systemctl enable kubelet.service
+
 - hosts: masters[0]
   become: true
   tasks:
@@ -100,10 +130,6 @@
       command: rm -rf $HOME/.kube
     - name: Remove /var/lib/kubelet/config.yaml
       command: rm -f /var/lib/kubelet/config.yaml
-    - name: Restart docker service
-      ansible.builtin.service:
-        name: docker
-        state: restarted
     - name: Stop kubelet service
       ansible.builtin.service:
         name: kubelet
