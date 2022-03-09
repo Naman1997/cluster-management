@@ -14,7 +14,7 @@ ansible-galaxy collection install -r requirements.yaml
 - Make sure you have yay installed in your VMs
 - Create vars.json by running: `cp vars.json.example vars.json` and update `vars.json` file
 
-## Prerequisites for running playbook nfs-setup
+## Prerequisites for running playbook storage-setup
 - Make sure you're able to SSH into all your VMs
 - You have exactly one VM inside the nfs group in your inventory
 - Name of your NFS VM is 'nfs-server' in your inventory
