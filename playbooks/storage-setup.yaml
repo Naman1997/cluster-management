@@ -93,3 +93,6 @@
         chart_ref: longhorn/longhorn
         create_namespace: yes
         release_namespace: longhorn-system
+        release_values:
+          persistence:
+            defaultClass: false
