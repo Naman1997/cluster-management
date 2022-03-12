@@ -87,11 +87,12 @@
   become: false
   tasks:
     - name: Install etcd for all nodes except nfs
-      community.general.pacman:
-        name: etcd
-        state: present
-        executable: yay
-        upgrade_extra_args: "noconfirm"
+      command: yay -S etcd --noconfirm
+#       community.general.pacman:
+#         name: etcd
+#         state: present
+#         executable: yay
+#         upgrade_extra_args: "noconfirm"
 
 - hosts: masters[0]
   become: true
