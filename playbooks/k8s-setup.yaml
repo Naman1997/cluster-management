@@ -62,11 +62,11 @@
     - name: Disable swap
       command: swapoff -a
       when: ansible_swaptotal_mb > 0
-    - name: Enable and start docker service
-      ansible.builtin.service:
-        name: docker
-        enabled: yes
-        state: started
+#     - name: Enable and start docker service
+#       ansible.builtin.service:
+#         name: docker
+#         enabled: yes
+#         state: started
     - name: Download specific release for CNI binary
       command: "{{ item }}"
       with_items:
@@ -105,6 +105,7 @@
       ansible.builtin.service:
         name: docker
         state: restarted
+        enabled: yes
     - name: Stop kubelet service
       ansible.builtin.service:
         name: kubelet
