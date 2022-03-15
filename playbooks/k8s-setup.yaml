@@ -105,6 +105,10 @@
       ansible.builtin.service:
         name: docker
         state: restarted
+      register: result_docker
+      until: result_docker.failed == false
+      retries: 5
+      delay: 10
     - name: Stop kubelet service
       ansible.builtin.service:
         name: kubelet
