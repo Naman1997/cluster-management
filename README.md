@@ -1,6 +1,10 @@
 # cluster-management
 [![Ansible Validation](https://github.com/Naman1997/cluster-management/actions/workflows/main.yml/badge.svg)](https://github.com/Naman1997/cluster-management/actions/workflows/main.yml)
 
+This repo is being archived as I'm now maintaining a simpler version for kubernetes deployment using k0sctl and fcos.
+
+To learn more, please visit [simple-fcos-cluster](https://github.com/Naman1997/simple-fcos-cluster)
+
 Ansible playbooks for [Arch Linux](https://archlinux.org/) VM management and setting up k8s
 
 ## Install the requirements
